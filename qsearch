@@ -1,0 +1,148 @@
+#!/bin/bash
+
+#
+# qsearch - a hotkey quick search implimentation
+# Copyright (C) 2009 Daniel J Griffiths <ghost1227@archlinux.us>
+# Thanks to
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.  
+
+############################################################
+# Configure stuff
+############################################################
+# ARG/ENG	=	Create a variable to store arguments
+#
+# VER		=	You can change it if you want, but
+#				there's really no point...
+############################################################
+if [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch ]]; then
+	source ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch
+else
+	echo "DEFAULT=google" > ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch
+	source ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch
+fi
+
+ARG=$1
+ENG=$2
+
+VER=0.1
+
+ASK="\e[1;33m==>\e[1;37m"
+INFO="\e[1;34m==>\e[1;37m"
+ERROR="\e[1;31m==>\e[1;37m"
+SUCCESS="\e[1;32m==>\e[1;37m"
+RESET="\e[0m"
+
+############################################################
+# Version function - Displays version information
+############################################################
+version() {
+	echo "QuickSearch v$VER"
+}
+
+############################################################
+# Usage function - Displays usage information
+############################################################
+usage() {
+	version
+	echo
+	echo "Usage:"
+	echo "      qsearch [argument] [searchengine]"
+	echo
+	echo "Arguments:"
+	echo "      -s, --search   Search using [searchengine]"
+	echo "      -d, --default  Set default engine [searchengine]"
+	echo "      -h, --help     This message"
+	echo "      -v, --version  Output version information and exit"
+	echo
+	echo "Valid search engines:"
+	echo "      google, yahoo, live, ask, dogpile, altavista"
+	echo "      wikipedia, archwiki, archbbs"
+}
+
+############################################################
+# Fail function
+############################################################
+fail() {
+	echo -e "$ERROR An unknown error occurred!$RESET"
+	exit
+}
+
+############################################################
+# Search function
+############################################################
+search() {
+	if [[ ! $ENG ]]; then
+		ENG=$DEFAULT
+	fi
+	if [[ $ENG = "google" ]]; then
+		firefox "http://www.google.com/search?q=`xsel -p -o`"
+	elif [[ $ENG = "yahoo" ]]; then
+		firefox "http://search.yahoo.com/search?p=`xsel -p -o`"
+	elif [[ $ENG = "live" ]]; then
+		firefox "http://search.live.com/results.aspx?q=`xsel -p -o`"
+	elif [[ $ENG = "ask" ]]; then
+		firefox "http://www.ask.com/web?q=`xsel -p -o`"
+	elif [[ $ENG = "dogpile" ]]; then
+		firefox "http://www.dogpile.com/dogpile/ws/results/Web/`xsel -p -o`/1/417/TopNavigation/Relevance/iq=true/zoom=off/_iceUrlFlag=7?_IceUrl=true"
+	elif [[ $ENG = "altavista" ]]; then
+		firefox "http://www.altavista.com/web/results?q=`xsel -p -o`"
+	elif [[ $ENG = "wikipedia" ]]; then
+		firefox "http://en.wikipedia.org/wiki/Special:Search?search=`xsel -p -o`"
+	elif [[ $ENG = "archwiki" ]]; then
+		firefox "http://wiki.archlinux.org/index.php/Special:Search?search=`xsel -p -o`&fulltext=Search"
+	elif [[ $ENG = "archbbs" ]]; then
+		firefox "http://bbs.archlinux.org/search.php?action=search&keywords=`xsel -p -o`&&author=&forum=-1&search_in=all&sort_by=0&sort_dir=DESC&show_as=topics&search=Submit"
+	else
+		echo -e "$ERROR $ENG is not a valid search engine! $RESET"
+	fi
+}
+
+############################################################
+# Default function
+############################################################
+default() {
+	if [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch ]]; then
+		CDEF=`cat ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch`
+		SDEF=`echo ${CDEF}|sed 's/DEFAULT=//g'`
+		sed -i 's/'${SDEF}'/'${ENG}'/' ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch
+	else
+		echo "DEFAULT=${ENG}" > ${XDG_CONFIG_HOME:-$HOME/.config}/qsearch
+	fi
+}
+
+
+############################################################
+# Check arguments passed at runtime
+############################################################
+case "$1" in
+	''|'-s'|'--search')
+	search
+	;;
+	'-d'|'--default')
+	default
+	;;
+	'-h'|'--help')
+	usage
+	;;
+	'-v'|'--version')
+	version
+	;;
+        *)
+	echo -e "$ERROR Invalid argument '$2', see qsearch -h.$RESET"
+	;;
+esac
+
